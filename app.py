@@ -32,28 +32,28 @@ if "data_dict" not in st.session_state:
 for role, message in st.session_state.chat_history:
     st.chat_message(role).markdown(message)
 
-# Upload CSV
-st.subheader("Step 1: Upload CSV for Analysis")
-uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"], key="main_data")
+# ========= Section 1: Upload Main Data =========
+st.header("📁 Section 1: Upload Main Dataset (CSV)")
+uploaded_file = st.file_uploader("Choose your main data CSV file", type=["csv"], key="main_data")
 
 if uploaded_file is not None:
     try:
         st.session_state.uploaded_data = pd.read_csv(uploaded_file)
-        st.success("Main data file uploaded successfully.")
-        st.write("### Uploaded Data Preview")
+        st.success("✅ Main data file uploaded successfully.")
+        st.write("### 🔍 Preview of Main Dataset")
         st.dataframe(st.session_state.uploaded_data.head())
     except Exception as e:
-        st.error(f"An error occurred while reading the file: {e}")
+        st.error(f"An error occurred while reading the main data file: {e}")
 
-# Upload optional data dictionary
-st.subheader("Step 2: (Optional) Upload Data Dictionary")
+# ========= Section 2: Upload Data Dictionary (Optional) =========
+st.header("📖 Section 2: Upload Data Dictionary (Optional)")
 data_dict_file = st.file_uploader("Upload a Data Dictionary CSV (optional)", type=["csv"], key="data_dict")
 
 if data_dict_file is not None:
     try:
         st.session_state.data_dict = pd.read_csv(data_dict_file)
-        st.success("Data dictionary loaded successfully.")
-        st.write("### Data Dictionary Preview")
+        st.success("✅ Data dictionary loaded successfully.")
+        st.write("### 📘 Preview of Data Dictionary")
         st.dataframe(st.session_state.data_dict)
     except Exception as e:
         st.error(f"An error occurred while reading the data dictionary: {e}")
@@ -72,13 +72,12 @@ if user_input := st.chat_input("Type your message here..."):
                 if "analyze" in user_input.lower() or "insight" in user_input.lower():
                     data_description = st.session_state.uploaded_data.describe().to_string()
 
-                    # If data dictionary is uploaded, include it in the prompt
                     if st.session_state.data_dict is not None:
                         data_dict_description = st.session_state.data_dict.to_string(index=False)
                         prompt = (
                             f"I have the following dataset:\n\n{data_description}\n\n"
-                            f"And here is a data dictionary that explains the columns:\n\n{data_dict_description}\n\n"
-                            f"Please analyze the dataset and provide insights considering the context of the dictionary."
+                            f"And here is a data dictionary that describes the dataset:\n\n{data_dict_description}\n\n"
+                            f"Please analyze the dataset and provide insights considering both the dataset and dictionary."
                         )
                     else:
                         prompt = (
