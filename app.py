@@ -25,8 +25,7 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "uploaded_data" not in st.session_state:
     st.session_state.uploaded_data = None
-if "data_dict" not in st.session_state:
-    st.session_state.data_dict = None
+# No need to define st.session_state.data_dict here to avoid key conflict
 
 # Display chat history
 for role, message in st.session_state.chat_history:
@@ -47,14 +46,15 @@ if uploaded_file is not None:
 
 # ========= Section 2: Upload Data Dictionary (Optional) =========
 st.header("📖 Section 2: Upload Data Dictionary (Optional)")
-data_dict_file = st.file_uploader("Upload a Data Dictionary CSV (optional)", type=["csv"], key="data_dict")
+data_dict_file = st.file_uploader("Upload a Data Dictionary CSV (optional)", type=["csv"], key="data_dict_file")
 
 if data_dict_file is not None:
     try:
-        st.session_state.data_dict = pd.read_csv(data_dict_file)
+        data_dict_df = pd.read_csv(data_dict_file)
+        st.session_state.data_dict = data_dict_df  # Save to session state
         st.success("✅ Data dictionary loaded successfully.")
         st.write("### 📘 Preview of Data Dictionary")
-        st.dataframe(st.session_state.data_dict)
+        st.dataframe(data_dict_df)
     except Exception as e:
         st.error(f"An error occurred while reading the data dictionary: {e}")
 
@@ -72,7 +72,7 @@ if user_input := st.chat_input("Type your message here..."):
                 if "analyze" in user_input.lower() or "insight" in user_input.lower():
                     data_description = st.session_state.uploaded_data.describe().to_string()
 
-                    if st.session_state.data_dict is not None:
+                    if "data_dict" in st.session_state and st.session_state.data_dict is not None:
                         data_dict_description = st.session_state.data_dict.to_string(index=False)
                         prompt = (
                             f"I have the following dataset:\n\n{data_description}\n\n"
