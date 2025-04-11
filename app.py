@@ -2,97 +2,97 @@ import streamlit as st
 import pandas as pd
 import google.generativeai as genai
 
-# Set up the Streamlit app layout
-st.title("🐧 My Chatbot and Data Analysis App")
-st.subheader("Conversation and Data Analysis")
+# ===== 1. Setup Layout =====
+st.title("🐧 Gemini Chatbot + Data Analyzer")
+st.subheader("Upload your CSV and get AI insights!")
 
-# Load Gemini API Key from Streamlit secrets
+# ===== 2. Load Gemini API Key =====
 try:
     key = st.secrets["gemini_api_key"]
     genai.configure(api_key=key)
     model = genai.GenerativeModel("models/gemini-2.0-flash-lite")
-    st.success("Gemini API Key successfully configured.")
+    st.success("✅ Gemini API Key configured successfully.")
 except Exception as e:
     model = None
-    st.error(f"An error occurred while setting up the Gemini model: {e}")
+    st.error(f"❌ Error setting up Gemini model: {e}")
 
-# Initialize session state
+# ===== 3. Initialize session state =====
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "uploaded_data" not in st.session_state:
     st.session_state.uploaded_data = None
 
-# Display chat history
-for role, message in st.session_state.chat_history:
-    st.chat_message(role).markdown(message)
-
-# ========= Section 1: Upload Main Data =========
+# ===== 4. Section 1: Upload Main Dataset =====
 st.header("📁 Section 1: Upload Main Dataset (CSV)")
 uploaded_file = st.file_uploader("Choose your main data CSV file", type=["csv"], key="main_data")
 
 if uploaded_file is not None:
     try:
         st.session_state.uploaded_data = pd.read_csv(uploaded_file)
-        st.success("✅ Main data file uploaded successfully.")
-        st.write("### 🔍 Preview of Main Dataset")
+        st.success("✅ Main data uploaded successfully.")
+        st.write("### 🔍 Data Preview")
         st.dataframe(st.session_state.uploaded_data.head())
     except Exception as e:
-        st.error(f"An error occurred while reading the main data file: {e}")
+        st.error(f"Error reading main dataset: {e}")
 
-# ========= Section 2: Upload Data Dictionary (Optional) =========
+# ===== 5. Section 2: Upload Data Dictionary (Optional) =====
 st.header("📖 Section 2: Upload Data Dictionary (Optional)")
-data_dict_file = st.file_uploader("Upload a Data Dictionary CSV (optional)", type=["csv"], key="data_dict_file")
+data_dict_file = st.file_uploader("Upload a data dictionary CSV (optional)", type=["csv"], key="data_dict_file")
 
 if data_dict_file is not None:
     try:
         data_dict_df = pd.read_csv(data_dict_file)
-        st.session_state.data_dict = data_dict_df  # Save to session state
-        st.success("✅ Data dictionary loaded successfully.")
-        st.write("### 📘 Preview of Data Dictionary")
+        st.session_state.data_dict = data_dict_df
+        st.success("✅ Data dictionary uploaded.")
+        st.write("### 📘 Data Dictionary Preview")
         st.dataframe(data_dict_df)
     except Exception as e:
-        st.error(f"An error occurred while reading the data dictionary: {e}")
+        st.error(f"Error reading data dictionary: {e}")
 
-# Checkbox to enable analysis
-analyze_data_checkbox = st.checkbox("Analyze CSV Data with AI")
+# ===== 6. Enable Analysis =====
+analyze_data_checkbox = st.checkbox("📊 Analyze CSV with AI")
 
-# Chat Input
-if user_input := st.chat_input("Type your message here..."):
+# ===== 7. Chat Input =====
+if user_input := st.chat_input("💬 Type your question here..."):
     st.session_state.chat_history.append(("user", user_input))
     st.chat_message("user").markdown(user_input)
 
     if model:
         try:
             if st.session_state.uploaded_data is not None and analyze_data_checkbox:
-                if "analyze" in user_input.lower() or "insight" in user_input.lower():
-                    data_description = st.session_state.uploaded_data.describe().to_string()
 
-                    if "data_dict" in st.session_state and st.session_state.data_dict is not None:
-                        data_dict_description = st.session_state.data_dict.to_string(index=False)
-                        prompt = (
-                            f"I have the following dataset:\n\n{data_description}\n\n"
-                            f"And here is a data dictionary that describes the dataset:\n\n{data_dict_description}\n\n"
-                            f"Please analyze the dataset and provide insights considering both the dataset and dictionary."
-                        )
-                    else:
-                        prompt = (
-                            f"Analyze the following dataset and provide insights:\n\n{data_description}"
-                        )
+                # ========== Build Prompt ========== #
+                data_description = st.session_state.uploaded_data.describe().to_string()
+                data_sample = st.session_state.uploaded_data.head(5).to_string()
 
-                    response = model.generate_content(prompt)
-                    bot_response = response.text
+                if "data_dict" in st.session_state and st.session_state.data_dict is not None:
+                    data_dict_description = st.session_state.data_dict.to_string(index=False)
+                    prompt = (
+                        f"I uploaded a dataset. Here's a statistical summary:\n\n{data_description}\n\n"
+                        f"Sample rows from the dataset:\n\n{data_sample}\n\n"
+                        f"Column descriptions from the data dictionary:\n\n{data_dict_description}\n\n"
+                        f"Please analyze the dataset and provide key insights, trends, anomalies, or important summaries."
+                    )
                 else:
-                    response = model.generate_content(user_input)
-                    bot_response = response.text
+                    prompt = (
+                        f"I uploaded a dataset. Here's a statistical summary:\n\n{data_description}\n\n"
+                        f"Sample rows from the dataset:\n\n{data_sample}\n\n"
+                        f"Please analyze the dataset and provide insights or summaries based on these values."
+                    )
+
+                # ========== Generate Response ========== #
+                response = model.generate_content(prompt)
+                bot_response = response.text
+
             elif not analyze_data_checkbox:
-                bot_response = "Data analysis is disabled. Please select the 'Analyze CSV Data with AI' checkbox to enable analysis."
+                bot_response = "📌 Please enable 'Analyze CSV with AI' to allow me to help with data insights."
             else:
-                bot_response = "Please upload a CSV file first, then ask me to analyze it."
+                bot_response = "⚠️ Please upload a CSV file first."
 
             st.session_state.chat_history.append(("assistant", bot_response))
             st.chat_message("assistant").markdown(bot_response)
 
         except Exception as e:
-            st.error(f"An error occurred while generating the response: {e}")
+            st.error(f"Error generating AI response: {e}")
     else:
-        st.warning("Please configure the Gemini API Key to enable chat responses.")
+        st.warning("⚠️ Gemini model is not configured yet.")
