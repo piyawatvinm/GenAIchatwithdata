@@ -7,9 +7,14 @@ st.title("🐧 My Chatbot and Data Analysis App")
 st.subheader("Conversation and Data Analysis")
 
 # Capture Gemini API Key
- key = st.secrets["gemini_api_key"]
-  genai.configure(api_key=key)
-  model = genai.GenerativeModel("gemini-2.0-flash-lite")
+if gemini_api_key:
+    try:
+        key = st.secrets["gemini_api_key"]
+        genai.configure(api_key=key)
+        model = genai.GenerativeModel("models/gemini-1.5-flash-lite")
+        st.success("Gemini API Key successfully configured.")
+    except Exception as e:
+        st.error(f"An error occurred while setting up the Gemini model: {e}")
 
 # Initialize session state
 if "chat_history" not in st.session_state:
