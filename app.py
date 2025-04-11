@@ -6,18 +6,21 @@ import google.generativeai as genai
 st.title("🐧 My Chatbot and Data Analysis App")
 st.subheader("Conversation and Data Analysis")
 
-# Capture Gemini API Key
- key = st.secrets["gemini_api_key"]
-  genai.configure(api_key=key)
-  model = genai.GenerativeModel("gemini-2.0-flash-lite")
-
+# Load Gemini API Key from Streamlit secrets
+try:
+    key = st.secrets["gemini_api_key"]
+    genai.configure(api_key=key)
+    model = genai.GenerativeModel("models/gemini-2.0-flash-lite")
+    st.success("Gemini API Key successfully configured.")
+except Exception as e:
+    model = None
+    st.error(f"An error occurred while setting up the Gemini model: {e}")
 
 # Initialize session state
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "uploaded_data" not in st.session_state:
     st.session_state.uploaded_data = None
-# No need to define st.session_state.data_dict here to avoid key conflict
 
 # Display chat history
 for role, message in st.session_state.chat_history:
